@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Iran–Israel–USA Conflict Zone · Interactive Map</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #f4efe5;
+    --panel:     #ffffff;
+    --border:    #d4c9b8;
+    --red:       #b91c1c;
+    --red-light: #fef2f2;
+    --orange:    #c2410c;
+    --teal:      #0f766e;
+    --green:     #15803d;
+    --navy:      #1e3a8a;
+    --purple:    #6b21a8;
+    --gold:      #92400e;
+    --text:      #1c1917;
+    --dim:       #78716c;
+    --serif:     'Playfair Display', Georgia, serif;
+    --sans:      'IBM Plex Sans', system-ui, sans-serif;
+    --mono:      'IBM Plex Mono', monospace;
+  }
+
+  html, body { height: 100%; font-family: var(--sans); background: var(--bg); color: var(--text); }
+
+  /* ── Header ── */
+  #header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    background: #1c1917; color: #f5f0e8;
+    padding: 10px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 2px solid var(--red);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+  #header h1 {
+    font-family: var(--serif); font-size: 15px; letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  #header .sub {
+    font-size: 11px; color: #a8a29e; font-family: var(--mono);
+    margin-top: 2px; letter-spacing: 0.06em;
+  }
+  #header .badge {
+    background: var(--red); color: white; font-size: 10px;
+    padding: 3px 10px; border-radius: 2px; font-family: var(--mono);
+    font-weight: 600; letter-spacing: 0.08em;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity:1; } 50% { opacity:0.6; }
+  }
+
+  /* ── Map ── */
+  #map {
+    position: fixed;
+    top: 56px; left: 0; right: 360px; bottom: 90px;
+  }
+
+  /* ── Right Panel ── */
+  #panel {
+    position: fixed;
+    top: 56px; right: 0; width: 360px; bottom: 90px;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+    display: flex; flex-direction: column;
+  }
+  #panel::-webkit-scrollbar { width: 4px; }
+  #panel::-webkit-scrollbar-track { background: #f5f0e8; }
+  #panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .panel-title {
+    background: #1c1917; color: #f5f0e8;
+    padding: 14px 16px 10px;
+    font-family: var(--serif); font-size: 14px; font-weight: 600;
+    border-bottom: 2px solid var(--red);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .panel-title .sub { font-family: var(--sans); font-size: 10px; color: #a8a29e; margin-top: 3px; font-style: italic; }
+
+  .section { border-bottom: 1px solid var(--border); }
+  .section-hdr {
+    background: #292524; color: #f5f0e8;
+    padding: 8px 16px; font-size: 10px; font-weight: 600;
+    letter-spacing: 0.1em; font-family: var(--mono);
+    cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+    user-select: none;
+  }
+  .section-hdr:hover { background: #3c3330; }
+  .section-hdr .toggle { font-size: 12px; transition: transform 0.2s; }
+  .section-hdr.collapsed .toggle { transform: rotate(-90deg); }
+  .section-body { padding: 0; }
+  .section-body.hidden { display: none; }
+
+  /* Layer toggles */
+  .layer-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 16px; cursor: pointer; transition: background 0.15s;
+    border-bottom: 1px solid #f5f0e8;
+  }
+  .layer-row:hover { background: #faf7f2; }
+  .layer-row input[type=checkbox] { accent-color: var(--red); width: 14px; height: 14px; flex-shrink: 0; }
+  .layer-sym { width: 20px; text-align: center; font-size: 14px; flex-shrink: 0; }
+  .layer-label { font-size: 12px; flex: 1; }
+  .layer-count { font-size: 10px; color: var(--dim); font-family: var(--mono); }
+
+  /* Stats table */
+  .stats-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  .stats-table tr:nth-child(even) { background: #faf7f2; }
+  .stats-table td { padding: 6px 16px; vertical-align: middle; }
+  .stats-table td:last-child { text-align: right; font-weight: 600; font-family: var(--mono); font-size: 11px; }
+  .val-red    { color: var(--red); }
+  .val-orange { color: var(--orange); }
+  .val-teal   { color: var(--teal); }
+  .val-dim    { color: var(--dim); }
+
+  /* Risk table */
+  .risk-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .risk-table thead tr { background: #374151; color: white; }
+  .risk-table thead td { padding: 6px 8px; font-weight: 600; font-size: 10px; letter-spacing: 0.05em; }
+  .risk-table tbody tr:nth-child(even) { background: #faf7f2; }
+  .risk-table tbody tr:hover { background: #fef2f2; cursor: pointer; }
+  .risk-table tbody td { padding: 5px 8px; vertical-align: middle; }
+  .risk-table .rank { color: var(--dim); font-family: var(--mono); text-align: center; }
+  .risk-table .score { font-family: var(--mono); font-weight: 600; text-align: right; }
+  .struck-badge {
+    background: var(--red); color: white; font-size: 8px;
+    padding: 1px 5px; border-radius: 2px; font-family: var(--mono);
+    white-space: nowrap;
+  }
+
+  /* Hormuz table */
+  .hormuz-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .hormuz-table thead tr { background: #134e4a; color: white; }
+  .hormuz-table thead td { padding: 6px 16px; font-weight: 600; font-size: 10px; letter-spacing: 0.05em; }
+  .hormuz-table tbody tr:nth-child(even) { background: #f0fdfa; }
+  .hormuz-table tbody td { padding: 5px 16px; }
+  .hormuz-table .cost { font-family: var(--mono); font-weight: 600; color: var(--teal); text-align: right; }
+  .hormuz-table .vol { font-family: var(--mono); text-align: right; }
+
+  /* ── Footer ── */
+  #footer {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000;
+    background: #1c1917; border-top: 1px solid #3c3330;
+    padding: 6px 20px;
+  }
+  #footer .cas {
+    font-size: 11px; font-weight: 600; color: #fca5a5;
+    font-family: var(--mono); letter-spacing: 0.03em;
+  }
+  #footer .src {
+    font-size: 9.5px; color: #78716c; margin-top: 2px; font-style: italic;
+  }
+  #footer .credit {
+    position: absolute; right: 20px; bottom: 8px;
+    font-size: 10px; color: #a8a29e; font-style: italic;
+    font-family: var(--serif);
+  }
+
+  /* ── Leaflet popup & tooltip overrides ── */
+  .leaflet-popup-content-wrapper {
+    border-radius: 4px; box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    border: 1px solid var(--border); padding: 0; overflow: hidden;
+    font-family: var(--sans);
+  }
+  .leaflet-popup-content { margin: 0; min-width: 220px; max-width: 300px; }
+  .leaflet-popup-tip-container { display: none; }
+
+  .popup-header {
+    padding: 10px 14px 8px; font-weight: 600; font-size: 13px;
+    border-bottom: 2px solid var(--border);
+  }
+  .popup-body { padding: 10px 14px; font-size: 11.5px; line-height: 1.7; }
+  .popup-body .row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+  .popup-body .lbl { color: var(--dim); }
+  .popup-body .val { font-weight: 600; font-family: var(--mono); font-size: 11px; }
+  .popup-struck {
+    background: var(--red-light); border-top: 1px solid #fecaca;
+    padding: 6px 14px; font-size: 11px; color: var(--red); font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .leaflet-tooltip {
+    background: #1c1917 !important; color: #f5f0e8 !important;
+    border: 1px solid #3c3330 !important;
+    border-radius: 3px !important; font-family: var(--sans) !important;
+    font-size: 11px !important; padding: 4px 8px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+    white-space: nowrap !important;
+  }
+  .leaflet-tooltip::before { display: none !important; }
+
+  /* Pulse animation for struck sites */
+  @keyframes ripple {
+    0%   { transform: scale(1);   opacity: 0.6; }
+    100% { transform: scale(3.5); opacity: 0; }
+  }
+  .pulse-ring {
+    border-radius: 50%; animation: ripple 1.8s ease-out infinite;
+    position: absolute; top: 50%; left: 50%;
+    transform-origin: center center;
+  }
+
+  /* ── Basemap switcher ── */
+  #basemap-ctrl {
+    position: absolute; bottom: 20px; left: 10px; z-index: 900;
+    background: white; border: 1px solid var(--border);
+    border-radius: 4px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .bm-btn {
+    display: block; padding: 5px 12px; font-size: 11px; cursor: pointer;
+    font-family: var(--mono); border-bottom: 1px solid var(--border);
+    transition: background 0.15s; color: var(--text);
+  }
+  .bm-btn:last-child { border-bottom: none; }
+  .bm-btn:hover { background: #faf7f2; }
+  .bm-btn.active { background: #1c1917; color: white; }
+</style>
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────────────── -->
+<div id="header">
+  <div>
+    <h1>IRAN – ISRAEL – USA CONFLICT ZONE &nbsp;·&nbsp; Critical Infrastructure & Struck Sites</h1>
+    <div class="sub">INTERACTIVE GEOSPATIAL ANALYSIS &nbsp;·&nbsp; STATUS: 11 MARCH 2026</div>
+  </div>
+  <div class="badge">● ACTIVE CONFLICT</div>
+</div>
+
+<!-- ── Map ────────────────────────────────────────────────── -->
+<div id="map"></div>
+
+<!-- ── Right Panel ────────────────────────────────────────── -->
+<div id="panel">
+  <div class="panel-title">
+    CRITICAL INFRASTRUCTURE AT RISK
+    <div class="sub">Iran · Israel · USA | March 2026</div>
+  </div>
+
+  <!-- Layer Toggles -->
+  <div class="section">
+    <div class="section-hdr" onclick="toggleSection(this)">
+      LAYER CONTROLS <span class="toggle">▾</span>
+    </div>
+    <div class="section-body" id="layers-body">
+      <div class="layer-row" onclick="toggleLayer('nuclear')">
+        <input type="checkbox" id="chk-nuclear" checked/>
+        <span class="layer-sym" style="color:#b91c1c">▲</span>
+        <span class="layer-label">Nuclear Facilities</span>
+        <span class="layer-count">8 sites</span>
+      </div>
+      <div class="layer-row" onclick="toggleLayer('oil')">
+        <input type="checkbox" id="chk-oil" checked/>
+        <span class="layer-sym" style="color:#92400e">◆</span>
+        <span class="layer-label">Oil &amp; Gas Infrastructure</span>
+        <span class="layer-count">11 sites</span>
+      </div>
+      <div class="layer-row" onclick="toggleLayer('chokepoint')">
+        <input type="checkbox" id="chk-chokepoint" checked/>
+        <span class="layer-sym" style="color:#0f766e">★</span>
+        <span class="layer-label">Maritime Chokepoints</span>
+        <span class="layer-count">3 sites</span>
+      </div>
+      <div class="layer-row" onclick="toggleLayer('military')">
+        <input type="checkbox" id="chk-military" checked/>
+        <span class="layer-sym" style="color:#15803d">■</span>
+        <span class="layer-label">Military Bases</span>
+        <span class="layer-count">8 sites</span>
+      </div>
+      <div class="layer-row" onclick="toggleLayer('struck')">
+        <input type="checkbox" id="chk-struck" checked/>
+        <span class="layer-sym" style="color:#b91c1c">✕</span>
+        <span class="layer-label">Confirmed Strike Events</span>
+        <span class="layer-count">29 events</span>
+      </div>
+      <div class="layer-row" onclick="toggleLayer('shipping')">
+        <input type="checkbox" id="chk-shipping" checked/>
+        <span class="layer-sym" style="color:#0f766e">─</span>
+        <span class="layer-label">Shipping Lanes</span>
+        <span class="layer-count">3 lanes</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Verified Casualties -->
+  <div class="section">
+    <div class="section-hdr" onclick="toggleSection(this)">
+      VERIFIED CASUALTIES · 11 MAR 2026 <span class="toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <table class="stats-table">
+        <tr>
+          <td>Iran killed (official)</td>
+          <td class="val-red">~1,255–1,270</td>
+        </tr>
+        <tr>
+          <td>Iran killed (HRANA)</td>
+          <td class="val-red">up to 1,708</td>
+        </tr>
+        <tr>
+          <td>Iran — children killed</td>
+          <td class="val-red">194+</td>
+        </tr>
+        <tr>
+          <td>Israel killed</td>
+          <td class="val-orange">13</td>
+        </tr>
+        <tr>
+          <td>Israel wounded</td>
+          <td class="val-orange">1,929</td>
+        </tr>
+        <tr>
+          <td>Lebanon killed</td>
+          <td class="val-red">394 (incl. 83 children)</td>
+        </tr>
+        <tr>
+          <td>US military KIA</td>
+          <td class="val-orange">8</td>
+        </tr>
+        <tr>
+          <td>UAE killed</td>
+          <td class="val-dim">4</td>
+        </tr>
+        <tr>
+          <td>Saudi Arabia killed</td>
+          <td class="val-dim">2</td>
+        </tr>
+        <tr>
+          <td>Displaced persons</td>
+          <td class="val-dim">100,000s</td>
+        </tr>
+        <tr>
+          <td>Conflict duration</td>
+          <td class="val-dim">11 days</td>
+        </tr>
+      </table>
+      <div style="padding:8px 16px; font-size:10px; color:var(--dim); font-style:italic; line-height:1.6; border-top:1px solid var(--border);">
+        Iran: Dep. Health Min. Ali Jafarian / HRANA (Al Jazeera, 11 Mar 2026) ·
+        Israel: Israeli Health Ministry (Al Jazeera, 11 Mar 2026) ·
+        Lebanon: Lebanese Health Ministry (Mar 9, 2026) ·
+        US: US DoD / Al Jazeera (Mar 11, 2026)
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Risk Nodes -->
+  <div class="section">
+    <div class="section-hdr" onclick="toggleSection(this)">
+      TOP RISK NODES · SCORE / 12 <span class="toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <table class="risk-table">
+        <thead>
+          <tr>
+            <td>#</td><td>Site</td><td>Country</td>
+            <td style="text-align:right">Score</td><td>Status</td>
+          </tr>
+        </thead>
+        <tbody id="risk-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Hormuz Impact -->
+  <div class="section">
+    <div class="section-hdr" onclick="toggleSection(this)">
+      HORMUZ CLOSURE — ECONOMIC IMPACT ($95/bbl) <span class="toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <table class="hormuz-table">
+        <thead>
+          <tr>
+            <td>Duration</td>
+            <td style="text-align:right">Lost Oil</td>
+            <td style="text-align:right">Est. Cost</td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1 day</td>  <td class="vol">1.8 Mbbl</td>  <td class="cost">$0.2B</td></tr>
+          <tr><td>7 days</td> <td class="vol">12.6 Mbbl</td> <td class="cost">$1.2B</td></tr>
+          <tr><td>14 days</td><td class="vol">25.2 Mbbl</td> <td class="cost">$2.4B</td></tr>
+          <tr><td>30 days</td><td class="vol">54 Mbbl</td>   <td class="cost">$5.1B</td></tr>
+          <tr><td>90 days</td><td class="vol">162 Mbbl</td>  <td class="cost">$15.4B</td></tr>
+        </tbody>
+      </table>
+      <div style="padding:8px 16px; font-size:10px; color:var(--dim); font-style:italic; border-top:1px solid var(--border);">
+        Based on 21 Mbbl/day flow · Max bypassable: 19.2 Mbbl/day · Shortfall: 1.8 Mbbl/day
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Oil Price Model Summary -->
+  <div class="section">
+    <div class="section-hdr" onclick="toggleSection(this)">
+      OIL PRICE MODEL SUMMARY · 30-DAY FORECASTS <span class="toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <table class="stats-table" style="font-size:11px;">
+        <tr style="background:#1c1917;">
+          <td style="color:#f5f0e8;font-weight:700;padding:7px 16px;font-family:var(--mono);font-size:10px;letter-spacing:.05em">Scenario</td>
+          <td style="color:#f5f0e8;font-weight:700;padding:7px 16px;font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-align:right">Prob.</td>
+          <td style="color:#f5f0e8;font-weight:700;padding:7px 16px;font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-align:right">30-Day Price</td>
+          <td style="color:#f5f0e8;font-weight:700;padding:7px 16px;font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-align:right">Δ Today</td>
+        </tr>
+        <tr style="background:#fef2f2;">
+          <td style="padding:6px 16px;"><span style="background:var(--red);color:white;font-size:8px;padding:1px 5px;border-radius:2px;font-family:var(--mono);font-weight:700">ESCALATION</span><br/><span style="font-size:9px;color:var(--dim)">Full Hormuz closure, new fronts</span></td>
+          <td style="text-align:right;font-family:var(--mono);font-weight:700;padding:6px 16px">20%</td>
+          <td style="text-align:right;font-family:var(--mono);font-weight:700;color:var(--red);padding:6px 16px">$180–220</td>
+          <td style="text-align:right;font-family:var(--mono);font-weight:700;color:var(--red);padding:6px 16px">+53–86%</td>
+        </tr>
+        <tr style="background:#fff7ed;">
+          <td style="padding:6px 16px;"><span style="background:var(--orange);color:white;font-size:8px;padding:1px 5px;border-radius:2px;font-family:var(--mono);font-weight:700">STALEMATE</span><br/><span style="font-size:9px;color:var(--dim)">Active conflict, partial closure</span></td>
+          <td style="text-align:right;font-family:var(--mono);font-weight:700;padding:6px 16px">45%</td>
+          <td style="text-align:right;font-family:var(--mono);font-weight:700;color:var(--orange);padding:6px 16px">$130–160</td>
+          <td style="text-align:right;font-family:var(--mono);font-weight:700;color:var(--orange);padding:6px 16px">+10–36%</td>
+        </tr>
+        <tr style="background:#f0fdf4;">
+          <td style="padding:6px 16px;"><span style="background:var(--green);color:white;font-size:8px;padding:1px 5px;border-radius:2px;font-family:var(--mono);font-weight:700">CEASEFIRE</span><br/><span style="font-size:9px;color:var(--dim)">Diplomatic resolution</span></td>
+          <td style="text-align:right;font-family:var(--mono);font-weight:700;padding:6px 16px">25%</td>
+          <td style="text-align:right;font-family:var(--mono);font-weight:700;color:var(--green);padding:6px 16px">$85–105</td>
+          <td style="text-align:right;font-family:var(--mono);font-weight:700;color:var(--green);padding:6px 16px">-28–11%</td>
+        </tr>
+        <tr style="background:#f0fdfa;">
+          <td style="padding:6px 16px;"><span style="background:var(--teal);color:white;font-size:8px;padding:1px 5px;border-radius:2px;font-family:var(--mono);font-weight:700">DE-ESCALATION</span><br/><span style="font-size:9px;color:var(--dim)">Iran backs down / deal</span></td>
+          <td style="text-align:right;font-family:var(--mono);font-weight:700;padding:6px 16px">10%</td>
+          <td style="text-align:right;font-family:var(--mono);font-weight:700;color:var(--teal);padding:6px 16px">$72–85</td>
+          <td style="text-align:right;font-family:var(--mono);font-weight:700;color:var(--teal);padding:6px 16px">-39–28%</td>
+        </tr>
+        <tr style="background:#f5f0e8;border-top:2px solid var(--border);">
+          <td style="padding:7px 16px;font-weight:700">WEIGHTED EXPECTED</td>
+          <td style="text-align:right;font-family:var(--mono);font-weight:700;padding:7px 16px">100%</td>
+          <td style="text-align:right;font-family:var(--mono);font-weight:700;color:var(--navy);padding:7px 16px">~$128</td>
+          <td style="text-align:right;font-family:var(--mono);font-weight:700;color:var(--navy);padding:7px 16px">+8.5%</td>
+        </tr>
+      </table>
+      <!-- Monte Carlo percentiles -->
+      <div style="padding:10px 16px 4px;font-size:10px;font-weight:700;color:var(--text);font-family:var(--mono);letter-spacing:.05em;border-top:1px solid var(--border);margin-top:4px;">
+        MONTE CARLO · 50,000 RUNS · PRICE PERCENTILES
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:6px 16px 12px;">
+        <div style="background:#f0fdf4;border:1px solid #d1fae5;border-radius:3px;padding:8px 4px;text-align:center;">
+          <div style="font-size:9px;color:var(--dim);font-family:var(--mono)">P10</div>
+          <div style="font-size:15px;font-weight:700;font-family:var(--mono);color:var(--green)">$82</div>
+          <div style="font-size:8px;color:var(--dim)">best case</div>
+        </div>
+        <div style="background:#faf7f2;border:1px solid var(--border);border-radius:3px;padding:8px 4px;text-align:center;">
+          <div style="font-size:9px;color:var(--dim);font-family:var(--mono)">P25</div>
+          <div style="font-size:15px;font-weight:700;font-family:var(--mono)">$98</div>
+          <div style="font-size:8px;color:var(--dim)">lower range</div>
+        </div>
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:3px;padding:8px 4px;text-align:center;">
+          <div style="font-size:9px;color:var(--dim);font-family:var(--mono)">P50</div>
+          <div style="font-size:15px;font-weight:700;font-family:var(--mono);color:var(--navy)">$124</div>
+          <div style="font-size:8px;color:var(--dim)">median</div>
+        </div>
+        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:3px;padding:8px 4px;text-align:center;">
+          <div style="font-size:9px;color:var(--dim);font-family:var(--mono)">P75</div>
+          <div style="font-size:15px;font-weight:700;font-family:var(--mono);color:var(--orange)">$158</div>
+          <div style="font-size:8px;color:var(--dim)">upper range</div>
+        </div>
+        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:3px;padding:8px 4px;text-align:center;">
+          <div style="font-size:9px;color:var(--dim);font-family:var(--mono)">P90</div>
+          <div style="font-size:15px;font-weight:700;font-family:var(--mono);color:var(--red)">$195</div>
+          <div style="font-size:8px;color:var(--dim)">worst case</div>
+        </div>
+      </div>
+      <!-- Key inputs -->
+      <div style="padding:4px 16px 10px;font-size:10px;color:var(--dim);font-style:italic;border-top:1px solid var(--border);line-height:1.7;">
+        Brent pre-war: $72/bbl · Current: $118/bbl · Hormuz: 21 Mbbl/day (21% global supply) ·
+        OPEC spare capacity: 3.2 Mbbl/day · Max SPR release: 4 Mbbl/day<br/>
+        Models: Supply Shock · Historical Analogue Regression (R²=0.81) · Monte Carlo (50,000 runs) · Scenario Forecast<br/>
+        Sources: IEA · EIA · BP Statistical Review · OPEC · Reuters · Not financial advice.
+      </div>
+    </div>
+  </div>
+  <!-- Sources -->
+  <div class="section">
+    <div class="section-hdr" onclick="toggleSection(this)">
+      SOURCES &amp; METHODOLOGY <span class="toggle">▾</span>
+    </div>
+    <div class="section-body" style="padding:12px 16px; font-size:10.5px; color:var(--dim); line-height:1.8;">
+      IAEA · US EIA · ACLED · Reuters · Al Jazeera · Wikipedia · WHO · UNICEF ·
+      US CENTCOM / DoD · Iranian Health Ministry · Lebanese Health Ministry ·
+      Israeli Health Ministry · HRANA · Modern Diplomacy<br/><br/>
+      Geospatial coordinates sourced from open-source intelligence (OSINT).
+      Risk scores calculated via multi-factor vulnerability model.
+      All casualty figures are lower bounds subject to ongoing revision.
+    </div>
+  </div>
+</div>
+
+<!-- ── Footer ─────────────────────────────────────────────── -->
+<div id="footer">
+  <div class="cas">
+    VERIFIED CASUALTIES (11 Mar 2026): &nbsp;
+    Iran: ~1,255–1,270 killed (official) / up to 1,708 (HRANA) &nbsp;·&nbsp;
+    Israel: 13 killed, 1,929 wounded &nbsp;·&nbsp;
+    Lebanon: 394 killed (incl. 83 children) &nbsp;·&nbsp;
+    UAE: 4 &nbsp;·&nbsp; Saudi Arabia: 2 &nbsp;·&nbsp; US military: 8 KIA
+  </div>
+  <div class="src">
+    Sources: Iran — Dep. Health Min. Ali Jafarian via Al Jazeera (11 Mar 2026); HRANA Human Rights Activists News Agency ·
+    Israel — Israeli Health Ministry (Al Jazeera, 11 Mar 2026) ·
+    Lebanon — Lebanese Health Ministry (Mar 9, 2026) ·
+    US KIA — US DoD / Al Jazeera (Mar 11, 2026)
+  </div>
+  <div class="credit">Cartography: Adediran Adeyemi · 11 March 2026</div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════════════════════
+
+const NUCLEAR = [
+  { name:"Natanz Fuel Enrichment Plant", lat:33.7225, lon:51.7272, country:"Iran", detail:"Primary centrifuge enrichment plant. ~19,000 IR-1 centrifuges. 8m underground.", struck:true, date:"Feb 28", by:"US/Israel", risk:9.27 },
+  { name:"Fordow Fuel Enrichment Plant", lat:34.8847, lon:50.9939, country:"Iran", detail:"Deeply buried ~80m underground. 2,700+ centrifuges. Hardened bunker facility.", struck:true, date:"Feb 28", by:"US/Israel", risk:10.74 },
+  { name:"Isfahan Nuclear Technology Centre", lat:32.6319, lon:51.7278, country:"Iran", detail:"UF6 conversion plant. Fuel manufacturing site. Produces fuel for Bushehr NPP.", struck:true, date:"Feb 28", by:"US/Israel", risk:7.1 },
+  { name:"Arak Heavy Water Reactor", lat:34.1772, lon:49.2281, country:"Iran", detail:"IR-40 heavy water reactor. Potential plutonium production site.", struck:false, risk:6.8 },
+  { name:"Bushehr Nuclear Power Plant", lat:28.83, lon:50.9019, country:"Iran", detail:"Only Iranian civilian nuclear power plant. 1,000 MW capacity. Russian-built.", struck:false, risk:5.9 },
+  { name:"Parchin Military Complex", lat:35.5228, lon:51.7667, country:"Iran", detail:"Suspected nuclear weapons research. Conventional explosives testing.", struck:false, risk:8.01 },
+  { name:"Dimona Nuclear Research Centre", lat:30.9725, lon:35.1486, country:"Israel", detail:"Israel's primary nuclear research facility. Estimated 80–400 warheads produced.", struck:false, risk:7.4 },
+  { name:"Soreq Nuclear Research Centre", lat:31.8125, lon:34.7717, country:"Israel", detail:"5 MW research reactor. Radioisotope production. Medical applications.", struck:false, risk:4.2 },
+];
+
+const OIL = [
+  { name:"Kharg Island Oil Terminal", lat:29.2447, lon:50.3169, country:"Iran", detail:"90% of Iran's oil exports. 5 million bpd capacity. Critical economic chokepoint.", struck:false, risk:7.8 },
+  { name:"Abadan Oil Refinery", lat:30.3392, lon:48.2958, country:"Iran", detail:"Iran's largest refinery. 400,000 bpd capacity. One of world's oldest refineries.", struck:false, risk:6.2 },
+  { name:"South Pars Gas Field", lat:27.4500, lon:52.0000, country:"Iran", detail:"World's largest gas field (shared with Qatar). Critical to Iranian economy.", struck:false, risk:6.5 },
+  { name:"Tehran Oil Refinery", lat:35.55, lon:51.41, country:"Iran", detail:"220,000 bpd. Primary fuel supply for Tehran. Struck Mar 8.", struck:true, date:"Mar 8", by:"US/Israel", risk:5.8 },
+  { name:"Haifa Oil Refinery (BAZAN)", lat:32.8272, lon:35.0261, country:"Israel", detail:"197,000 bpd. Largest Israeli refinery. Struck by Iranian drone Mar 3.", struck:true, date:"Mar 3", by:"Iran", risk:8.46 },
+  { name:"Ras Tanura Terminal", lat:26.6478, lon:50.1583, country:"Saudi Arabia", detail:"6.5 Mbbl/day. World's largest crude oil terminal. Exposed to Gulf conflict.", struck:false, risk:6.01 },
+  { name:"Fujairah Oil Terminal", lat:25.1288, lon:56.3411, country:"UAE", detail:"1.4 Mbbl/day. Strategic tanker loading facility east of Hormuz.", struck:false, risk:4.8 },
+  { name:"Aghdasieh Oil Depot, Tehran", lat:35.81, lon:51.52, country:"Iran", detail:"NE Tehran oil depot. Major fire reported after strike. Mar 8.", struck:true, date:"Mar 8", by:"US/Israel", risk:5.2 },
+  { name:"Karaj Oil Depot", lat:35.83, lon:50.97, country:"Iran", detail:"Alborz province depot. Struck during Mar 8 oil infrastructure campaign.", struck:true, date:"Mar 8", by:"US/Israel", risk:4.9 },
+];
+
+const CHOKEPOINTS = [
+  { name:"Strait of Hormuz", lat:26.5667, lon:56.25, detail:"21 Mbbl/day — 21% of world oil supply. Mined by Iran Mar 5. 16 mine-laying vessels destroyed by US.", struck:true, date:"Mar 5 (mined)", by:"Iran", risk:8.73 },
+  { name:"Bab el-Mandeb Strait", lat:12.5833, lon:43.3333, detail:"8.8 Mbbl/day. Links Red Sea to Gulf of Aden. Critical for Suez Canal route.", struck:false, risk:5.4 },
+  { name:"Suez Canal (N. Entry)", lat:31.2667, lon:32.3, detail:"5.5 Mbbl/day via tankers. Global shipping artery. 12% of world trade.", struck:false, risk:5.88 },
+];
+
+const MILITARY = [
+  { name:"Al Udeid Air Base (CENTCOM)", lat:25.1173, lon:51.315, country:"USA/Qatar", detail:"HQ US Central Command. 10,000 personnel. 2 ballistic missiles struck Mar 1.", struck:true, date:"Mar 1", by:"Iran", risk:7.2 },
+  { name:"NSA Bahrain (5th Fleet HQ)", lat:26.2172, lon:50.6058, country:"USA/Bahrain", detail:"HQ US 5th Fleet. 7,000 personnel. Multiple strikes confirmed. Juffair district.", struck:true, date:"Mar 1", by:"Iran", risk:8.86 },
+  { name:"Al Dhafra Air Base", lat:24.2469, lon:54.5475, country:"USA/UAE", detail:"US Air Force base. F-35, B-2, RQ-4 operations. UAE.", struck:false, risk:5.5 },
+  { name:"Ali Al Salem Air Base", lat:29.3467, lon:47.5217, country:"USA/Kuwait", detail:"US Air Force, Kuwait. F/A-18 operations. Used in Iraq and Afghanistan.", struck:false, risk:4.8 },
+  { name:"RAF Akrotiri", lat:34.5784, lon:32.9879, country:"UK/Cyprus", detail:"UK sovereign base area. Strategic bomber staging. Drone strike confirmed Mar 2.", struck:true, date:"Mar 2", by:"Iran", risk:5.2 },
+  { name:"Nevatim Air Base", lat:31.2067, lon:35.0122, country:"Israel", detail:"Primary base for Israel's F-35I Adir fleet. Deep strike capability.", struck:false, risk:6.1 },
+  { name:"IRGC Aerospace HQ, Tehran", lat:35.7219, lon:51.3347, country:"Iran", detail:"Command centre for Iran's ballistic missile program. Shahab, Sejjil, Fattah.", struck:false, risk:8.51 },
+  { name:"Shahid Nojeh Air Base", lat:35.2111, lon:48.6536, country:"Iran", detail:"IRIAF base near Hamedan. Fighter and drone operations. Struck Feb 28.", struck:true, date:"Feb 28", by:"US/Israel", risk:6.3 },
+];
+
+const STRUCK_SITES = [
+  // Iran — nuclear
+  { name:"Natanz Enrichment Facility", lat:33.7225, lon:51.7272, cat:"nuclear", by:"US/Israel", date:"Feb 28", detail:"Primary enrichment site. Critical target of opening strikes." },
+  { name:"Fordow Enrichment Facility", lat:34.8847, lon:50.9939, cat:"nuclear", by:"US/Israel", date:"Feb 28", detail:"80m underground hardened bunker. Bunker-buster munitions used." },
+  { name:"Isfahan Nuclear Tech Centre", lat:32.6319, lon:51.7278, cat:"nuclear", by:"US/Israel", date:"Feb 28", detail:"UF6 conversion plant targeted." },
+  // Iran — government
+  { name:"Khamenei Compound (Pasteur St)", lat:35.700, lon:51.375, cat:"government", by:"US/Israel", date:"Feb 28", detail:"Supreme Leader Khamenei killed in this strike. Son Mojtaba succeeded." },
+  { name:"Presidential Palace", lat:35.705, lon:51.385, cat:"government", by:"US/Israel", date:"Feb 28", detail:"Office of the President struck." },
+  { name:"National Security Council", lat:35.695, lon:51.400, cat:"government", by:"US/Israel", date:"Feb 28", detail:"NSC compound hit." },
+  { name:"Iran Parliament (Majlis)", lat:35.6939, lon:51.413, cat:"government", by:"US/Israel", date:"Mar 1", detail:"Parliament building struck during session." },
+  { name:"Assembly of Experts", lat:35.710, lon:51.360, cat:"government", by:"US/Israel", date:"Mar 1", detail:"Hit during supreme leader election session." },
+  { name:"IRIB State Broadcaster HQ", lat:35.754, lon:51.386, cat:"government", by:"US/Israel", date:"Mar 3", detail:"State TV and radio complex. Broadcasts interrupted." },
+  { name:"IRGC Malek-Ashtar Building", lat:35.730, lon:51.450, cat:"military", by:"US/Israel", date:"Mar 2", detail:"Completely destroyed. Major IRGC command node." },
+  { name:"Basij HQ, Tehran", lat:35.680, lon:51.390, cat:"military", by:"US/Israel", date:"Mar 3", detail:"Paramilitary HQ struck." },
+  { name:"IRGC Aerospace HQ", lat:35.7219, lon:51.3347, cat:"military", by:"US/Israel", date:"Feb 28", detail:"Missile command centre. Primary ballistic missile command." },
+  // Iran — energy
+  { name:"Aghdasieh Oil Depot", lat:35.810, lon:51.520, cat:"energy", by:"US/Israel", date:"Mar 8", detail:"Major fire. Oil leaked into NE Tehran streets." },
+  { name:"Tehran Oil Refinery", lat:35.550, lon:51.410, cat:"energy", by:"US/Israel", date:"Mar 8", detail:"South Tehran refinery. 220,000 bpd capacity." },
+  { name:"Shahran Oil Depot", lat:35.770, lon:51.280, cat:"energy", by:"US/Israel", date:"Mar 8", detail:"Oil leaked into streets. Residential area evacuated." },
+  { name:"Karaj Oil Depot", lat:35.830, lon:50.970, cat:"energy", by:"US/Israel", date:"Mar 8", detail:"Alborz province. Part of Mar 8 oil infrastructure campaign." },
+  // Iran — military
+  { name:"Shahid Nojeh Air Base", lat:35.2111, lon:48.6536, cat:"military", by:"US/Israel", date:"Feb 28", detail:"IRIAF fighter base near Hamedan struck." },
+  { name:"Kermanshah Missile Bases", lat:34.320, lon:47.070, cat:"military", by:"US/Israel", date:"Feb 28", detail:"Multiple missile launchers destroyed." },
+  // Iran — civilian
+  { name:"Minab School (165 killed)", lat:27.150, lon:57.080, cat:"civilian", by:"US/Israel", date:"Feb 28", detail:"Schoolgirls and staff killed. Worst single civilian strike of the war." },
+  { name:"Shiraz — Zibashahr (20 killed)", lat:29.605, lon:52.530, cat:"civilian", by:"US/Israel", date:"Mar 5", detail:"Residential area struck. 20 killed." },
+  { name:"Golestan Palace (UNESCO)", lat:35.680, lon:51.423, cat:"civilian", by:"US/Israel", date:"Mar 1", detail:"UNESCO World Heritage site. Damaged in strike." },
+  { name:"Grand Bazaar, Tehran", lat:35.6733, lon:51.4225, cat:"civilian", by:"US/Israel", date:"Mar 1", detail:"Historic market district struck." },
+  { name:"Qom Industrial Area (Shokouhiyeh)", lat:34.570, lon:50.830, cat:"civilian", by:"US/Israel", date:"Mar 6", detail:"Industrial district. Evacuation ordered." },
+  { name:"Beirut Hotel (4 killed)", lat:33.8938, lon:35.5018, cat:"civilian", by:"US/Israel", date:"Mar 8", detail:"Downtown Beirut hotel struck. 4 killed." },
+  // Israel — struck by Iran
+  { name:"Tel Aviv — Missile Strikes", lat:32.0853, lon:34.7818, cat:"civilian", by:"Iran", date:"Feb 28", detail:"Iranian ballistic missiles. Multiple interceptions and impacts." },
+  { name:"Beit Shemesh (9 killed)", lat:31.7471, lon:34.9898, cat:"civilian", by:"Iran", date:"Mar 1", detail:"9 civilians killed in Iranian ballistic missile strike." },
+  { name:"Haifa Oil Refinery", lat:32.8272, lon:35.0261, cat:"energy", by:"Iran", date:"Mar 3", detail:"BAZAN Group refinery. 197,000 bpd. Struck by Iranian drone." },
+  // Gulf
+  { name:"Al Udeid AB (Qatar)", lat:25.1173, lon:51.315, cat:"us_base", by:"Iran", date:"Mar 1", detail:"2 ballistic missiles. Radar systems also targeted." },
+  { name:"NSA Bahrain (5th Fleet)", lat:26.2172, lon:50.6058, cat:"us_base", by:"Iran", date:"Mar 1", detail:"Multiple strikes on US 5th Fleet HQ." },
+  { name:"RAF Akrotiri (Cyprus)", lat:34.5784, lon:32.9879, cat:"us_base", by:"Iran", date:"Mar 2", detail:"UK sovereign base struck by Iranian drone." },
+  { name:"Erbil Airport, Iraq", lat:36.2375, lon:43.9631, cat:"us_base", by:"Iran", date:"Mar 1", detail:"Islamic Resistance in Iraq. Multiple explosions." },
+  { name:"UAE — Abu Dhabi (4 killed)", lat:24.4539, lon:54.3773, cat:"civilian", by:"Iran", date:"Mar 2", detail:"4 killed, 112 wounded. Residential area." },
+  { name:"Saudi Arabia — Al Kharj (2 killed)", lat:24.150, lon:47.320, cat:"civilian", by:"Iran", date:"Mar 3", detail:"Projectile hit residential area. 2 killed." },
+];
+
+const SHIPPING_LANES = [
+  { name:"Persian Gulf Lane", coords:[[29.5,48.6],[26.0,50.3],[25.9,50.7],[26.5,52.0],[26.0,54.0],[25.5,55.5],[27.2,56.3]] },
+  { name:"Hormuz → Indian Ocean", coords:[[27.2,56.3],[25.5,56.8],[23.5,57.5],[22.0,58.0],[18.0,61.0]] },
+  { name:"Red Sea Lane", coords:[[31.3,32.3],[29.0,33.0],[26.0,35.0],[22.0,37.5],[16.0,41.0],[12.6,43.3]] },
+];
+
+const RISK_NODES = [
+  { rank:1, name:"Fordow Enrichment Plant",   country:"Iran",      score:10.74, struck:true  },
+  { rank:2, name:"Natanz Enrichment Plant",   country:"Iran",      score:9.27,  struck:true  },
+  { rank:3, name:"NSA Bahrain (5th Fleet)",   country:"Bahrain",   score:8.86,  struck:true  },
+  { rank:4, name:"Strait of Hormuz",          country:"—",         score:8.73,  struck:true  },
+  { rank:5, name:"IRGC Aerospace HQ Tehran",  country:"Iran",      score:8.51,  struck:false },
+  { rank:6, name:"Haifa Oil Refinery",        country:"Israel",    score:8.46,  struck:true  },
+  { rank:7, name:"Parchin Military Complex",  country:"Iran",      score:8.01,  struck:false },
+  { rank:8, name:"Ras Tanura Terminal",       country:"S. Arabia", score:6.01,  struck:false },
+  { rank:9, name:"Suez Canal (N. Entry)",     country:"Egypt",     score:5.88,  struck:false },
+];
+
+// ══════════════════════════════════════════════════════════════════
+// MAP INIT
+// ══════════════════════════════════════════════════════════════════
+const map = L.map('map', {
+  center: [30, 50], zoom: 5,
+  zoomControl: false,
+  attributionControl: false,
+});
+L.control.zoom({ position:'topright' }).addTo(map);
+
+const basemaps = {
+  light:     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom:18 }),
+  dark:      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom:18 }),
+  satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom:18 }),
+};
+basemaps.light.addTo(map);
+let currentBM = 'light';
+
+// Basemap switcher
+const bmCtrl = document.createElement('div');
+bmCtrl.id = 'basemap-ctrl';
+bmCtrl.innerHTML = `
+  <div class="bm-btn active" onclick="switchBM('light',this)">Light</div>
+  <div class="bm-btn" onclick="switchBM('dark',this)">Dark</div>
+  <div class="bm-btn" onclick="switchBM('satellite',this)">Satellite</div>
+`;
+document.getElementById('map').appendChild(bmCtrl);
+
+function switchBM(name, el) {
+  map.removeLayer(basemaps[currentBM]);
+  basemaps[name].addTo(map);
+  currentBM = name;
+  document.querySelectorAll('.bm-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// LAYER GROUPS
+// ══════════════════════════════════════════════════════════════════
+const layers = {
+  nuclear:    L.layerGroup().addTo(map),
+  oil:        L.layerGroup().addTo(map),
+  chokepoint: L.layerGroup().addTo(map),
+  military:   L.layerGroup().addTo(map),
+  struck:     L.layerGroup().addTo(map),
+  shipping:   L.layerGroup().addTo(map),
+};
+
+function toggleLayer(name) {
+  const chk = document.getElementById('chk-' + name);
+  chk.checked = !chk.checked;
+  if (chk.checked) map.addLayer(layers[name]);
+  else map.removeLayer(layers[name]);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SVG ICON FACTORY
+// ══════════════════════════════════════════════════════════════════
+function svgIcon(svg, size=28) {
+  return L.divIcon({
+    html: svg, className:'', iconSize:[size,size],
+    iconAnchor:[size/2,size/2], popupAnchor:[0,-size/2]
+  });
+}
+
+function triangleIcon(color, size=28) {
+  return svgIcon(`<svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+    <filter id="sh"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.4"/></filter>
+    <polygon points="14,3 27,25 1,25" fill="${color}" stroke="white" stroke-width="1.5" filter="url(#sh)"/>
+  </svg>`, size);
+}
+function diamondIcon(color, size=26) {
+  return svgIcon(`<svg viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg">
+    <filter id="sh"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.4"/></filter>
+    <polygon points="13,2 24,13 13,24 2,13" fill="${color}" stroke="white" stroke-width="1.5" filter="url(#sh)"/>
+  </svg>`, size);
+}
+function squareIcon(color, size=24) {
+  return svgIcon(`<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <filter id="sh"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.4"/></filter>
+    <rect x="3" y="3" width="18" height="18" fill="${color}" stroke="white" stroke-width="1.5" filter="url(#sh)"/>
+  </svg>`, size);
+}
+function starIcon(color, size=32) {
+  return svgIcon(`<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <filter id="sh"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.4"/></filter>
+    <polygon points="16,2 20,12 31,12 22,19 25,30 16,23 7,30 10,19 1,12 12,12" fill="${color}" stroke="white" stroke-width="1.2" filter="url(#sh)"/>
+  </svg>`, size);
+}
+function crossIcon(color, size=28) {
+  return svgIcon(`<svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+    <filter id="sh"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.5"/></filter>
+    <circle cx="14" cy="14" r="12" fill="${color}" fill-opacity="0.15" stroke="${color}" stroke-width="1.5"/>
+    <line x1="8" y1="8" x2="20" y2="20" stroke="${color}" stroke-width="3" stroke-linecap="round" filter="url(#sh)"/>
+    <line x1="20" y1="8" x2="8" y2="20" stroke="${color}" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="14" cy="14" r="5" fill="${color}" fill-opacity="0.2"/>
+  </svg>`, size);
+}
+function pulseIcon(color, size=36) {
+  return svgIcon(`<svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+    <style>
+      .r1{animation:rp 1.8s ease-out infinite}
+      .r2{animation:rp 1.8s ease-out 0.6s infinite}
+      .r3{animation:rp 1.8s ease-out 1.2s infinite}
+      @keyframes rp{0%{r:8;opacity:0.7}100%{r:17;opacity:0}}
+    </style>
+    <circle class="r1" cx="18" cy="18" r="8" fill="${color}" fill-opacity="0.4"/>
+    <circle class="r2" cx="18" cy="18" r="8" fill="${color}" fill-opacity="0.3"/>
+    <circle class="r3" cx="18" cy="18" r="8" fill="${color}" fill-opacity="0.2"/>
+    <line x1="11" y1="11" x2="25" y2="25" stroke="${color}" stroke-width="3.5" stroke-linecap="round"/>
+    <line x1="25" y1="11" x2="11" y2="25" stroke="${color}" stroke-width="3.5" stroke-linecap="round"/>
+    <circle cx="18" cy="18" r="6" fill="${color}" fill-opacity="0.25" stroke="${color}" stroke-width="1.5"/>
+  </svg>`, size);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// POPUP BUILDER
+// ══════════════════════════════════════════════════════════════════
+function popupHTML(title, headerColor, rows, struckBy, struckDate, detail) {
+  let rowsHTML = rows.map(([l,v]) =>
+    `<div class="row"><span class="lbl">${l}</span><span class="val">${v}</span></div>`
+  ).join('');
+  let struckHTML = struckBy
+    ? `<div class="popup-struck">⚡ STRUCK ${struckDate} · by ${struckBy}</div>` : '';
+  let detailHTML = detail
+    ? `<div style="margin-top:8px;font-size:11px;color:#57534e;line-height:1.6;border-top:1px solid #e7e5e4;padding-top:8px;">${detail}</div>` : '';
+  return `
+    <div class="popup-header" style="background:${headerColor};color:white;">${title}</div>
+    <div class="popup-body">${rowsHTML}${detailHTML}</div>
+    ${struckHTML}
+  `;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// NUCLEAR MARKERS
+// ══════════════════════════════════════════════════════════════════
+NUCLEAR.forEach(s => {
+  const col = s.country === 'Iran' ? '#b91c1c' : '#c2410c';
+  const m = L.marker([s.lat, s.lon], { icon: triangleIcon(col) })
+    .bindTooltip(`<b>☢ ${s.name}</b><br/>${s.country} · Risk: ${s.risk}`, { permanent:false })
+    .bindPopup(popupHTML(
+      '☢ ' + s.name, col,
+      [['Country', s.country], ['Risk Score', s.risk + ' / 12'], ['Type', 'Nuclear Facility']],
+      s.struck ? s.by : null, s.date, s.detail
+    ), { maxWidth:300 })
+    .addTo(layers.nuclear);
+});
+
+// ══════════════════════════════════════════════════════════════════
+// OIL & GAS MARKERS
+// ══════════════════════════════════════════════════════════════════
+OIL.forEach(s => {
+  const col = s.country === 'Iran' ? '#92400e' : '#b45309';
+  L.marker([s.lat, s.lon], { icon: diamondIcon(col) })
+    .bindTooltip(`<b>⛽ ${s.name}</b><br/>${s.country}${s.struck ? ' · STRUCK' : ''}`, { permanent:false })
+    .bindPopup(popupHTML(
+      '⛽ ' + s.name, col,
+      [['Country', s.country], ['Type', 'Oil & Gas'], ['Risk', s.risk + ' / 12']],
+      s.struck ? s.by : null, s.date, s.detail
+    ), { maxWidth:300 })
+    .addTo(layers.oil);
+});
+
+// ══════════════════════════════════════════════════════════════════
+// CHOKEPOINTS
+// ══════════════════════════════════════════════════════════════════
+CHOKEPOINTS.forEach(s => {
+  L.marker([s.lat, s.lon], { icon: starIcon('#0f766e') })
+    .bindTooltip(`<b>⚓ ${s.name}</b><br/>Risk: ${s.risk} / 12${s.struck ? ' · MINED/STRUCK' : ''}`, { permanent:false })
+    .bindPopup(popupHTML(
+      '⚓ ' + s.name, '#0f766e',
+      [['Risk Score', s.risk + ' / 12'], ['Type', 'Maritime Chokepoint']],
+      s.struck ? s.by : null, s.date, s.detail
+    ), { maxWidth:320 })
+    .addTo(layers.chokepoint);
+});
+
+// ══════════════════════════════════════════════════════════════════
+// MILITARY BASES
+// ══════════════════════════════════════════════════════════════════
+MILITARY.forEach(s => {
+  const col = s.country && s.country.includes('USA') ? '#15803d'
+            : s.country && s.country.includes('Iran') ? '#6b21a8'
+            : s.country && s.country.includes('Israel') ? '#1e3a8a'
+            : '#0369a1';
+  L.marker([s.lat, s.lon], { icon: squareIcon(col) })
+    .bindTooltip(`<b>🎯 ${s.name}</b><br/>${s.country}${s.struck ? ' · STRUCK' : ''}`, { permanent:false })
+    .bindPopup(popupHTML(
+      '🎯 ' + s.name, col,
+      [['Operator', s.country], ['Risk Score', s.risk + ' / 12'], ['Type', 'Military Base']],
+      s.struck ? s.by : null, s.date, s.detail
+    ), { maxWidth:300 })
+    .addTo(layers.military);
+});
+
+// ══════════════════════════════════════════════════════════════════
+// STRUCK SITES (animated pulse)
+// ══════════════════════════════════════════════════════════════════
+const catColors = {
+  nuclear:'#b91c1c', military:'#6b21a8', government:'#c2410c',
+  energy:'#92400e', civilian:'#374151', us_base:'#15803d'
+};
+const catLabels = {
+  nuclear:'Nuclear Facility', military:'Military / IRGC', government:'Government Building',
+  energy:'Energy / Oil', civilian:'Civilian Site', us_base:'US / Allied Base'
+};
+
+STRUCK_SITES.forEach(s => {
+  const col = s.by === 'Iran' ? '#1d4ed8' : '#b91c1c';
+  const ringCol = catColors[s.cat] || '#b91c1c';
+  L.marker([s.lat, s.lon], { icon: pulseIcon(col), zIndexOffset: 200 })
+    .bindTooltip(
+      `<b>💥 ${s.name}</b><br/>`+
+      `<span style="color:#fca5a5">Struck ${s.date} by ${s.by}</span>`,
+      { permanent:false }
+    )
+    .bindPopup(popupHTML(
+      '💥 ' + s.name, col,
+      [
+        ['Category', catLabels[s.cat] || s.cat],
+        ['Struck by', s.by],
+        ['Date', s.date],
+      ],
+      s.by, s.date, s.detail
+    ), { maxWidth:310 })
+    .addTo(layers.struck);
+});
+
+// ══════════════════════════════════════════════════════════════════
+// SHIPPING LANES
+// ══════════════════════════════════════════════════════════════════
+SHIPPING_LANES.forEach(lane => {
+  const coords = lane.coords.map(([lat,lon]) => [lat,lon]);
+  L.polyline(coords, {
+    color:'#0f766e', weight:2.5, opacity:0.45,
+    dashArray:'8,6', lineCap:'round'
+  })
+  .bindTooltip(`<b>⚓ ${lane.name}</b>`, { permanent:false, sticky:true })
+  .addTo(layers.shipping);
+});
+
+// ══════════════════════════════════════════════════════════════════
+// RISK TABLE (clickable — fly to site)
+// ══════════════════════════════════════════════════════════════════
+const riskCoords = {
+  "Fordow Enrichment Plant":  [34.8847, 50.9939],
+  "Natanz Enrichment Plant":  [33.7225, 51.7272],
+  "NSA Bahrain (5th Fleet)":  [26.2172, 50.6058],
+  "Strait of Hormuz":         [26.5667, 56.25],
+  "IRGC Aerospace HQ Tehran": [35.7219, 51.3347],
+  "Haifa Oil Refinery":       [32.8272, 35.0261],
+  "Parchin Military Complex": [35.5228, 51.7667],
+  "Ras Tanura Terminal":      [26.6478, 50.1583],
+  "Suez Canal (N. Entry)":    [31.2667, 32.3],
+};
+
+const tbody = document.getElementById('risk-tbody');
+RISK_NODES.forEach(r => {
+  const scoreCol = r.struck ? '#b91c1c' : '#92400e';
+  const tr = document.createElement('tr');
+  tr.title = 'Click to fly to site';
+  tr.innerHTML = `
+    <td class="rank">${r.rank}</td>
+    <td>${r.name}</td>
+    <td style="color:#78716c;font-size:10px">${r.country}</td>
+    <td class="score" style="color:${scoreCol}">${r.score}</td>
+    <td>${r.struck ? '<span class="struck-badge">● STRUCK</span>' : '<span style="color:#78716c;font-size:10px">○</span>'}</td>
+  `;
+  if (riskCoords[r.name]) {
+    tr.style.cursor = 'pointer';
+    tr.addEventListener('click', () => {
+      map.flyTo(riskCoords[r.name], 8, { duration:1.2 });
+    });
+  }
+  tbody.appendChild(tr);
+});
+
+// ══════════════════════════════════════════════════════════════════
+// SECTION COLLAPSE
+// ══════════════════════════════════════════════════════════════════
+function toggleSection(hdr) {
+  hdr.classList.toggle('collapsed');
+  const body = hdr.nextElementSibling;
+  body.classList.toggle('hidden');
+}
+</script>
+</body>
+</html>
