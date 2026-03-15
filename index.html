@@ -233,9 +233,9 @@
 <div id="header">
   <div>
     <h1>IRAN – ISRAEL – USA CONFLICT ZONE &nbsp;·&nbsp; Critical Infrastructure & Struck Sites</h1>
-    <div class="sub">INTERACTIVE GEOSPATIAL ANALYSIS &nbsp;·&nbsp; STATUS: 15 MARCH 2026 · DAY 16</div>
+    <div class="sub">INTERACTIVE GEOSPATIAL ANALYSIS &nbsp;·&nbsp; STATUS: 11 MARCH 2026</div>
   </div>
-  <div class="badge">● ACTIVE CONFLICT · DAY 16</div>
+  <div class="badge">● ACTIVE CONFLICT</div>
 </div>
 
 <!-- ── Map ────────────────────────────────────────────────── -->
@@ -245,7 +245,7 @@
 <div id="panel">
   <div class="panel-title">
     CRITICAL INFRASTRUCTURE AT RISK
-    <div class="sub">Iran · Israel · USA | 15 March 2026 · Day 16</div>
+    <div class="sub">Iran · Israel · USA | March 2026</div>
   </div>
 
   <!-- Layer Toggles -->
@@ -302,51 +302,54 @@
       <table class="stats-table">
         <tr>
           <td>Iran killed (official)</td>
-          <td class="val-red">1,444+</td>
+          <td class="val-red">~1,255–1,270</td>
         </tr>
         <tr>
-          <td>Iran killed (HRANA / ISNA)</td>
-          <td class="val-red">1,700+</td>
+          <td>Iran killed (HRANA)</td>
+          <td class="val-red">up to 1,708</td>
         </tr>
         <tr>
-          <td>Iran — injured</td>
-          <td class="val-red">18,551+</td>
+          <td>Iran — children killed</td>
+          <td class="val-red">194+</td>
         </tr>
         <tr>
           <td>Israel killed</td>
-          <td class="val-orange">15+</td>
+          <td class="val-orange">13</td>
         </tr>
         <tr>
           <td>Israel wounded</td>
-          <td class="val-orange">3,138+</td>
+          <td class="val-orange">1,929</td>
         </tr>
         <tr>
           <td>Lebanon killed</td>
-          <td class="val-red">773+</td>
+          <td class="val-red">394 (incl. 83 children)</td>
         </tr>
         <tr>
           <td>US military KIA</td>
-          <td class="val-orange">14+ confirmed</td>
+          <td class="val-orange">8</td>
         </tr>
         <tr>
-          <td>Gulf states killed</td>
-          <td class="val-dim">19+ (UAE, Saudi, Kuwait, Qatar)</td>
+          <td>UAE killed</td>
+          <td class="val-dim">4</td>
         </tr>
         <tr>
-          <td>Iran missiles/drones fired</td>
-          <td class="val-dim">500+ missiles · 2,000+ drones</td>
+          <td>Saudi Arabia killed</td>
+          <td class="val-dim">2</td>
         </tr>
         <tr>
-          <td>Iran homes damaged/destroyed</td>
-          <td class="val-dim">10,000+</td>
+          <td>Displaced persons</td>
+          <td class="val-dim">100,000s</td>
         </tr>
         <tr>
           <td>Conflict duration</td>
-          <td class="val-dim">16 days (active)</td>
+          <td class="val-dim">11 days</td>
         </tr>
       </table>
       <div style="padding:8px 16px; font-size:10px; color:var(--dim); font-style:italic; line-height:1.6; border-top:1px solid var(--border);">
-        Iran: Al Jazeera live tracker (15 Mar 2026) · Israel: Israeli Health Ministry (15 Mar 2026) · Lebanon: Lebanese Health Ministry (15 Mar 2026) · US: US CENTCOM / DoD (15 Mar 2026) · Gulf: Al Jazeera tracker (15 Mar 2026)
+        Iran: Dep. Health Min. Ali Jafarian / HRANA (Al Jazeera, 11 Mar 2026) ·
+        Israel: Israeli Health Ministry (Al Jazeera, 11 Mar 2026) ·
+        Lebanon: Lebanese Health Ministry (Mar 9, 2026) ·
+        US: US DoD / Al Jazeera (Mar 11, 2026)
       </div>
     </div>
   </div>
@@ -501,13 +504,19 @@
 <!-- ── Footer ─────────────────────────────────────────────── -->
 <div id="footer">
   <div class="cas">
-    VERIFIED CASUALTIES (15 Mar 2026): &nbsp;
-    Iran: 1,444+ killed · 18,551+ injured &nbsp;·&nbsp; Israel: 15+ killed · 3,138+ wounded &nbsp;·&nbsp; Lebanon: 773+ killed &nbsp;·&nbsp; Gulf states: 19+ killed &nbsp;·&nbsp; US military: 14+ KIA
+    VERIFIED CASUALTIES (11 Mar 2026): &nbsp;
+    Iran: ~1,255–1,270 killed (official) / up to 1,708 (HRANA) &nbsp;·&nbsp;
+    Israel: 13 killed, 1,929 wounded &nbsp;·&nbsp;
+    Lebanon: 394 killed (incl. 83 children) &nbsp;·&nbsp;
+    UAE: 4 &nbsp;·&nbsp; Saudi Arabia: 2 &nbsp;·&nbsp; US military: 8 KIA
   </div>
   <div class="src">
-    Sources: Al Jazeera live tracker · US CENTCOM · Israeli Health Ministry · Lebanese Health Ministry · ABC News · CNN · Wikipedia 2026 Iran War article · 15 March 2026
+    Sources: Iran — Dep. Health Min. Ali Jafarian via Al Jazeera (11 Mar 2026); HRANA Human Rights Activists News Agency ·
+    Israel — Israeli Health Ministry (Al Jazeera, 11 Mar 2026) ·
+    Lebanon — Lebanese Health Ministry (Mar 9, 2026) ·
+    US KIA — US DoD / Al Jazeera (Mar 11, 2026)
   </div>
-  <div class="credit">Cartography: Adediran Adeyemi · 15 March 2026</div>
+  <div class="credit">Cartography: Adediran Adeyemi · 11 March 2026</div>
 </div>
 
 <script>
@@ -596,22 +605,7 @@ const STRUCK_SITES = [
   { name:"Erbil Airport, Iraq", lat:36.2375, lon:43.9631, cat:"us_base", by:"Iran", date:"Mar 1", detail:"Islamic Resistance in Iraq. Multiple explosions." },
   { name:"UAE — Abu Dhabi (4 killed)", lat:24.4539, lon:54.3773, cat:"civilian", by:"Iran", date:"Mar 2", detail:"4 killed, 112 wounded. Residential area." },
   { name:"Saudi Arabia — Al Kharj (2 killed)", lat:24.150, lon:47.320, cat:"civilian", by:"Iran", date:"Mar 3", detail:"Projectile hit residential area. 2 killed." },
-  // Day 15-16 NEW STRIKES (Mar 14-15)
-  { name:"Isfahan — Multiple Sites (15 killed)", lat:32.6819, lon:51.6660, cat:"civilian", by:"US/Israel", date:"Mar 15", detail:"Heavy airstrikes across Isfahan area. At least 15 killed. Multiple sites struck in early hours of Day 16." },
-  { name:"Dezful Air Base", lat:32.4344, lon:48.3975, cat:"military", by:"US/Israel", date:"Mar 15", detail:"Iranian air base struck in early hours of Mar 15." },
-  { name:"Jask Port (Hormozgan)", lat:25.6400, lon:57.7700, cat:"military", by:"US/Israel", date:"Mar 15", detail:"Satellite imagery showed extensive damage. Strategic port on Gulf of Oman east of Hormuz." },
-  { name:"Hamedan — Explosions", lat:34.7990, lon:48.5150, cat:"military", by:"US/Israel", date:"Mar 15", detail:"Heavy explosions reported in Hamedan region, Mar 15." },
-  { name:"Kharg Island (Oil Hub)", lat:29.2447, lon:50.3169, cat:"energy", by:"US/Israel", date:"Mar 14", detail:"Trump announced US forces bombed Iranian military installations on Kharg Island — Iran's 'crown jewel'. 90% of Iran's oil exports pass through here. Oil infrastructure deliberately spared but warned." },
-  { name:"Shiraz — 20 Explosions", lat:29.5918, lon:52.5837, cat:"civilian", by:"US/Israel", date:"Mar 15", detail:"20 explosions heard near Shiraz in early hours of Mar 15." },
-  { name:"Southern Tehran — Explosions", lat:35.6200, lon:51.3890, cat:"civilian", by:"US/Israel", date:"Mar 15", detail:"Heavy explosions in southern Tehran, Mar 15." },
-  { name:"Khomein — Strike", lat:33.6700, lon:50.0800, cat:"military", by:"US/Israel", date:"Mar 15", detail:"Explosions reported in Khomein, central Iran." },
-  // Iran retaliatory strikes Day 15-16
-  { name:"Al-Dhafra Air Base, UAE", lat:24.2469, lon:54.5475, cat:"us_base", by:"Iran", date:"Mar 15", detail:"IRGC launched 10+ hypersonic missiles and drones targeting Al-Dhafra AB. Intelligence support role cited." },
-  { name:"Ahmed Al-Jaber AB, Kuwait", lat:28.9347, lon:47.4919, cat:"us_base", by:"Iran", date:"Mar 15", detail:"Two drones struck Ahmed Al-Jaber Air Base. Material damage, 3 Kuwaiti soldiers lightly injured." },
-  { name:"Ras Laffan, Qatar (Gas Hub)", lat:25.9000, lon:51.5500, cat:"energy", by:"Iran", date:"Mar 6",  detail:"Qatari Ministry of Defence confirmed drones struck Ras Laffan Industrial City — world's largest LNG facility. Qatar intercepted subsequent missiles." },
-  { name:"Tel Aviv — Mar 15 Strikes", lat:32.0700, lon:34.7900, cat:"civilian", by:"Iran", date:"Mar 15", detail:"Smoke seen rising from two locations in Tel Aviv. Vehicle destroyed in southern Tel Aviv. IDF rescue operations underway." },
-  { name:"Strait of Hormuz — Thai Tanker", lat:26.4000, lon:56.6000, cat:"energy", by:"Iran", date:"Mar 11", detail:"Thai cargo ship Mayuree Naree struck and set ablaze in Strait of Hormuz." },
-];];
+];
 
 const SHIPPING_LANES = [
   { name:"Persian Gulf Lane", coords:[[29.5,48.6],[26.0,50.3],[25.9,50.7],[26.5,52.0],[26.0,54.0],[25.5,55.5],[27.2,56.3]] },
